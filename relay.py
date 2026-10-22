@@ -62,6 +62,12 @@ class RelayBridge(Bridge):
                     if not existing and shutil.disk_usage(self.folder).free<200*1024*1024:raise Problem('Server storage is low. Your phone will retain this entry; contact your supplier.',503)
                 if path=='/v1/desktop/documents':
                     raise Problem('This relay does not retain invoice documents. Use the PC for final documents.',410)
+                if path=='/v1/desktop/ack' and method=='POST':
+                    raw=b.get('result',{})
+                    if not isinstance(raw,dict):raise ValueError('Invalid acknowledgement.')
+                    result={k:raw[k] for k in ('id','invoice_id') if isinstance(raw.get(k),int)}
+                    if b.get('status')=='rejected':result['error']=str(raw.get('error','Review this entry on the PC.'))[:500]
+                    b={**b,'result':result}
                 if path.startswith('/v1/document/'):
                     row=con.execute('SELECT status FROM events WHERE id=? AND user_id=?',(path.rsplit('/',1)[-1],user['id'])).fetchone()
                     if row and row[0]=='applied':raise Problem('Details were removed after PC delivery. Use the phone copy or the PC document.',410)
