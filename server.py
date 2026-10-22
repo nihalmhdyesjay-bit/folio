@@ -55,6 +55,7 @@ class Bridge:
         con = sqlite3.connect(self.path, timeout=30)
         con.row_factory = sqlite3.Row
         con.execute('PRAGMA journal_mode=WAL')
+        con.execute('PRAGMA secure_delete=ON')
         try:
             with con:
                 yield con
@@ -94,6 +95,11 @@ class Bridge:
             raise ValueError('That username already exists.')
         self.audit(con,'create-user','desktop',uid)
         return dict(id=uid)
+
+    def next_sequence(self,con):
+        value=max(int(self.get(con,'sequence','0')),con.execute('SELECT COALESCE(MAX(seq),0) FROM events').fetchone()[0])+1
+        self.set(con,'sequence',value)
+        return value
 
     def event(self, row):
         return dict(id=row['id'],seq=row['seq'],kind=row['kind'],payload=json.loads(row['payload']),
@@ -220,7 +226,10 @@ class Bridge:
                     r=con.execute('SELECT * FROM events WHERE id=?',(b['id'],)).fetchone()
                     if not r:raise ValueError('Unknown mobile record.')
                     result={**json.loads(r['result']),**b['result']}
-                    con.execute('UPDATE events SET status=?,result=? WHERE id=?',(b['status'],json.dumps(result),b['id']))
+                    if b['status']=='applied':
+                        result={k:result[k] for k in ('id','invoice_id') if isinstance(result.get(k),int)}
+                        con.execute("UPDATE events SET status='applied',payload='{}',result=? WHERE id=?",(json.dumps(result),b['id']))
+                    else:con.execute('UPDATE events SET status=?,result=? WHERE id=?',(b['status'],json.dumps(result),b['id']))
                     self.audit(con,b['status'],'desktop',b['id']);return dict(ok=True)
                 if path=='/v1/desktop/documents' and method=='POST':
                     for update in b.get('updates',[]):
@@ -236,7 +245,7 @@ class Bridge:
                                 counts={r[0]:r[1] for r in con.execute('SELECT status,COUNT(*) FROM events GROUP BY status')},
                                 issues=[self.event(r) for r in con.execute("SELECT * FROM events WHERE status='rejected' ORDER BY seq DESC LIMIT 40")])
                 if path=='/v1/desktop/retry' and method=='POST':
-                    seq=con.execute('SELECT COALESCE(MAX(seq),0)+1 FROM events').fetchone()[0]
+                    seq=self.next_sequence(con)
                     con.execute("UPDATE events SET status='pending',seq=?,result='{}' WHERE id=? AND status='rejected'",(seq,b['id']))
                     return dict(ok=True)
                 if path=='/v1/desktop/team' and method=='GET':return dict(users=[dict(r) for r in con.execute('SELECT id,name,username,active FROM users ORDER BY name')])
@@ -258,7 +267,7 @@ class Bridge:
                     if old:
                         if old['user_id']!=user['id'] or old['request_hash']!=fingerprint:raise Problem('This record identity was already used. Do not change a submitted bill.',409)
                         return self.event(old)
-                    seq=con.execute('SELECT COALESCE(MAX(seq),0)+1 FROM events').fetchone()[0]
+                    seq=self.next_sequence(con)
                     p=self.canonical(con,b,user,seq)
                     con.execute('INSERT INTO events(id,seq,user_id,kind,request_hash,payload,created) VALUES(?,?,?,?,?,?,?)',(eid,seq,user['id'],b['kind'],fingerprint,json.dumps(p),stamp()))
                     self.audit(con,'submit',user['id'],eid)
