@@ -35,6 +35,18 @@ class RelayBridge(Bridge):
                 con.execute("DELETE FROM config WHERE key='catalog'")
 
     def api(self,method,path,b,token,query,address):
+        if path in ('/v1/drafts','/v1/desktop/drafts','/v1/desktop/drafts/ack'):
+            import draft_service
+            with LOCK,self.connect() as con:
+                desktop=path.startswith('/v1/desktop/')
+                user=self.authenticate(con,token,desktop)
+                return draft_service.handle(con,desktop,user,method,path.rsplit('/',1)[-1],b)
+        if path.startswith(('/v1/ai/','/v1/desktop/ai/')):
+            import ai_service
+            with LOCK,self.connect() as con:
+                user=self.authenticate(con,token,path.startswith('/v1/desktop/'))
+                scope=str(self.folder)+':'+('desktop' if user=='desktop' else str(user['id']))
+            return ai_service.handle(scope,method,path.rsplit('/',1)[-1],b,query)
         with LOCK:
             # Authenticate and bound-check before any read or mutation.
             with self.connect() as con:
@@ -148,12 +160,12 @@ CREATE TABLE IF NOT EXISTS limits(id TEXT PRIMARY KEY,count INTEGER,reset REAL);
     def __call__(self,env,start):
         path=env.get('PATH_INFO','');method=env.get('REQUEST_METHOD','GET');status=200
         try:
-            if path=='/health':result=dict(ok=True,version='2.5.0',multibusiness=True)
+            if path=='/health':result=dict(ok=True,version='2.6.0',multibusiness=True)
             elif path.startswith('/b/'):
                 parts=path.split('/',3);tenant=parts[2];subpath='/'+(parts[3] if len(parts)>3 else '')
                 bridge=self.bridge(tenant)
                 if subpath=='/health':
-                    with bridge.connect() as con:result=dict(ok=True,version='2.5.0',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
+                    with bridge.connect() as con:result=dict(ok=True,version='2.6.0',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
                 elif subpath.startswith('/v1/'):
                     if subpath=='/v1/login':self.limit(env.get('REMOTE_ADDR',''))
                     child=dict(env,PATH_INFO=subpath)
