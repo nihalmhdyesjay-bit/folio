@@ -20,7 +20,7 @@ def status():
     return dict(ready=bool(os.environ.get('GEMINI_API_KEY')),name='Folio AI',provider='Gemini',sample_only=True)
 
 def generate(body):
-    model=os.environ.get('FOLIO_GEMINI_MODEL','gemini-2.5-flash-lite')
+    model=os.environ.get('FOLIO_GEMINI_MODEL','gemini-3.5-flash-lite')
     if not re.fullmatch(r'gemini-[a-z0-9.-]{3,80}',model):raise ValueError('Invalid model.')
     data=dict(systemInstruction=dict(parts=[dict(text=PROMPT)]),contents=[dict(role='user',parts=[dict(text=json.dumps(body,ensure_ascii=False))])],generationConfig=dict(temperature=0,responseMimeType='application/json',maxOutputTokens=4096))
     req=urllib.request.Request('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',data=json.dumps(data).encode(),headers={'Content-Type':'application/json','x-goog-api-key':os.environ['GEMINI_API_KEY']})
