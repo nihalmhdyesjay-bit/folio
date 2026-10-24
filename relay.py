@@ -160,12 +160,12 @@ CREATE TABLE IF NOT EXISTS limits(id TEXT PRIMARY KEY,count INTEGER,reset REAL);
     def __call__(self,env,start):
         path=env.get('PATH_INFO','');method=env.get('REQUEST_METHOD','GET');status=200
         try:
-            if path=='/health':result=dict(ok=True,version='2.7.1',multibusiness=True)
+            if path=='/health':result=dict(ok=True,version='2.7.2',multibusiness=True)
             elif path.startswith('/b/'):
                 parts=path.split('/',3);tenant=parts[2];subpath='/'+(parts[3] if len(parts)>3 else '')
                 bridge=self.bridge(tenant)
                 if subpath=='/health':
-                    with bridge.connect() as con:result=dict(ok=True,version='2.7.1',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
+                    with bridge.connect() as con:result=dict(ok=True,version='2.7.2',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
                 elif subpath.startswith('/v1/'):
                     if subpath=='/v1/login':self.limit(env.get('REMOTE_ADDR',''))
                     child=dict(env,PATH_INFO=subpath)
