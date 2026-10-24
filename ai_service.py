@@ -57,6 +57,7 @@ def generate(body):
     if not isinstance(drafts,list) or len(drafts)>40:raise ValueError('Too many suggestions.')
     clean=[]
     for d in drafts:
+        if isinstance(d,dict) and isinstance(d.get('payload'),str):d['payload']=json.loads(d['payload'])
         if not isinstance(d,dict) or d.get('kind') not in ('invoice','purchase','journal','money') or not isinstance(d.get('payload'),dict):raise ValueError('Unsupported suggestion.')
         p={k:v for k,v in d['payload'].items() if k not in ('id','force','post','_revision')}
         clean.append(dict(kind=d['kind'],payload=p))
