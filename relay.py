@@ -35,6 +35,11 @@ class RelayBridge(Bridge):
                 con.execute("DELETE FROM config WHERE key='catalog'")
 
     def api(self,method,path,b,token,query,address):
+        if path.startswith(('/v1/assistant/','/v1/desktop/assistant/')):
+            import assistant_remote
+            with LOCK,self.connect() as con:
+                desktop=path.startswith('/v1/desktop/');user=self.authenticate(con,token,desktop)
+                return assistant_remote.handle(self,con,user,desktop,method,path.rsplit('/',1)[-1],b,query)
         if path in ('/v1/drafts','/v1/desktop/drafts','/v1/desktop/drafts/ack'):
             import draft_service
             with LOCK,self.connect() as con:
@@ -45,6 +50,12 @@ class RelayBridge(Bridge):
             import ai_service
             with LOCK,self.connect() as con:
                 user=self.authenticate(con,token,path.startswith('/v1/desktop/'))
+                if b.get('use_pc') and user!='desktop':
+                    import assistant_remote
+                    info=assistant_remote.status(self,con,user)
+                    if not info['allowed']:raise Problem('Ask the owner to enable Full accounting AI for this phone in PC Cloud sync.',403)
+                    if not info['online']:raise Problem('Open updated Folio on the PC and keep cloud sync on.',409)
+                    b=dict(b,context=dict(info['context'],page='Android remote accounting',pending_entries=b.get('context',{}).get('pending_entries',[])))
                 scope=str(self.folder)+':'+('desktop' if user=='desktop' else str(user['id']))
             return ai_service.handle(scope,method,path.rsplit('/',1)[-1],b,query)
         with LOCK:
@@ -160,12 +171,12 @@ CREATE TABLE IF NOT EXISTS limits(id TEXT PRIMARY KEY,count INTEGER,reset REAL);
     def __call__(self,env,start):
         path=env.get('PATH_INFO','');method=env.get('REQUEST_METHOD','GET');status=200
         try:
-            if path=='/health':result=dict(ok=True,version='2.7.2',multibusiness=True)
+            if path=='/health':result=dict(ok=True,version='2.7.3',multibusiness=True)
             elif path.startswith('/b/'):
                 parts=path.split('/',3);tenant=parts[2];subpath='/'+(parts[3] if len(parts)>3 else '')
                 bridge=self.bridge(tenant)
                 if subpath=='/health':
-                    with bridge.connect() as con:result=dict(ok=True,version='2.7.2',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
+                    with bridge.connect() as con:result=dict(ok=True,version='2.7.3',initialized=True,service_id=bridge.get(con,'service_id'),business_code=tenant)
                 elif subpath.startswith('/v1/'):
                     if subpath=='/v1/login':self.limit(env.get('REMOTE_ADDR',''))
                     child=dict(env,PATH_INFO=subpath)
