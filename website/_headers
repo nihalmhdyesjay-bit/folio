@@ -1,0 +1,9 @@
+/downloads/*.exe
+  Content-Type: application/octet-stream
+  Content-Disposition: attachment
+/downloads/*.apk
+  Content-Type: application/vnd.android.package-archive
+  Content-Disposition: attachment
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

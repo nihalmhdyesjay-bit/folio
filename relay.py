@@ -215,4 +215,5 @@ def create_app():
             except Exception:pass
             time.sleep(3600)
     threading.Thread(target=cleaner,daemon=True).start()
-    return relay
+    from public_site import PublicSite
+    return PublicSite(relay)

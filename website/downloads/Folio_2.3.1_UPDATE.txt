@@ -1,0 +1,57 @@
+FOLIO 2.3.1 — MULTIPLE BANKS, CASH ACCOUNTS AND ITEMS WHILE BILLING
+
+Install Folio_Setup_2.3.1.exe on the office host first. Close Folio before
+updating. Its database upgrade preserves existing entries and takes a safety
+backup before adding the account-selection fields.
+
+Update Android using Folio_Android_2.3.1.apk over the existing app. It uses the
+same app identity and signing key. Do not uninstall or clear storage while
+unsynced entries remain on the phone. Sync first when possible.
+
+BANK AND CASH ACCOUNTS
+- In Bank, choose Add bank account. In Cash, choose Add cash account.
+- Or create a ledger under Bank Accounts or Cash-in-Hand in Ledgers.
+  Subgroups under those groups are also recognized.
+- These are the SAME ledger accounts, not duplicate lists. They appear in
+  the corresponding book, dashboard, payment selectors and financial reports.
+- Existing custom bank/cash ledgers are recognized automatically.
+- The original Bank and Cash accounts retain all their existing transactions.
+  No old receipt is redistributed to a new account automatically.
+- Choose a specific account when entering a receipt/payment, receiving an
+  invoice payment, or recording payment while creating an invoice.
+- The Bank/Cash account filter shows one account or all accounts.
+  Each register row's balance belongs to the account named on that row.
+  Closing totals include opening balances and applicable posted journals.
+- Bank/cash ledgers used by transactions cannot be deleted or moved to a
+  different kind of group.
+
+OFFICE PCS AND ANDROID
+Office PCs continue to use the same database on the host. Open/refresh the
+relevant screen to see the latest accounts and entries from other staff.
+Android receives the account list with its normal catalog sync. Connect to
+office Wi-Fi, keep Folio open on the host, and use Refresh & sync if needed.
+Choose the receiving account on the phone for cash, bank or UPI payments.
+UPI payments go to the selected BANK account. Offline bills retain that choice.
+If the selected account has been removed or changed before sync, the entry is
+rejected for review rather than silently posted to another account.
+Older phone records without an account choice still use the original Bank/Cash.
+
+CREATE AN ITEM WHILE BILLING ON THE PC
+Inside invoice creation, choose Create item next to Add line.
+Enter the item details and save. The item is selected on the invoice without
+losing the customer, existing lines, delivery details or chosen payment mode.
+The same action is available when entering a purchase bill.
+New items reach Android through the regular catalog sync.
+
+The older separate bank-reconciliation screen remains for the original Bank
+account. This update does not add separate statement-import/reconciliation
+workflows for every custom bank account.
+
+Checked with disposable data: existing-book upgrade, bank/cash grouping,
+separate balances, financial totals, invoice receipts/edit/cancellation,
+journal movements, office browser workflows, offline Android account selection
+and desktop sync, duplicate protection, and import regression tests.
+The APK is built and signature-verified. A physical phone/second-office-PC
+acceptance check is still needed on your own network.
+
+Dottedline Imaginations | muhammadnihalrk@gmail.com
