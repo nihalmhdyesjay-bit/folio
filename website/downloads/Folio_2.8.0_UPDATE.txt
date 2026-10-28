@@ -1,0 +1,1 @@
+Folio 2.8.0 adds in-app update checking on Windows and Android. Windows verifies updates, backs up the books and opens Setup after you save your work. Android verifies the APK and asks for installation approval. Website downloads use the same signed release feed. Your existing books and phone entries are preserved.

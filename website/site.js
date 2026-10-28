@@ -6,3 +6,17 @@ const dialog=document.querySelector('#preview-dialog');let previousFocus;
 document.querySelectorAll('[data-preview]').forEach(button=>button.addEventListener('click',()=>{previousFocus=button;document.querySelector('#preview-title').textContent=button.dataset.title;const img=document.querySelector('#preview-image');img.src=button.dataset.preview;img.alt=button.dataset.title+' - Folio demonstration data';dialog.showModal()}));
 document.querySelector('#close-preview').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()}});dialog.addEventListener('close',()=>previousFocus?.focus());
 document.querySelectorAll('[data-download]').forEach(a=>{const configured=window.FOLIO_DOWNLOADS?.[a.dataset.download];if(!configured)return;const url=new URL(configured,location.href);if(!['https:','http:','file:'].includes(url.protocol))return;a.href=url.href;if(url.origin!==location.origin){a.removeAttribute('download');a.target='_blank';a.rel='noopener'}});
+
+// One signed release feed supplies downloads and version labels for the website and apps.
+(async()=>{try{
+ const response=await fetch('/downloads/releases/stable.json',{cache:'no-store'});if(!response.ok)return;
+ const envelope=await response.json();const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+ const key=await crypto.subtle.importKey('spki',bytes('MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEArcjUX8cTyfxvOgdiQ2ppr4N4ahdX+cpbzzZWJpNHbKdPqjjc1hFl60XyYoDVIn/oj6ELFON08ipvRXaFVzBz7lnq8qDjfJ0HNbGmLCv2bVtRV2K6Ua/axKsvA3BYxlwY78+Mm8HrDHC/GdlZ2rUZ8es2HfR+zpYqOc2J2zjoKGXatT83HVuN4JQg/fo1wov8Zt/aB2ZbmKtizVd1nxcU5+CbhgDEhKQaz1ANGxeSKpav4rsJ/Ukjw8bHVhtHkLzSShJ4GJ2fI3gchBya5SBDz22CQMX8C3ACNrzWFoyiSxbLtIIlqfdli7pDAyiInKc1WPptkrfkGRdgzUt5mcr41DTaSYMTvVVT3JEkC53VijV4Uc4TBzWfNsAoOmE0V3QsuVma23qJHWHHMNmZLhZYLmMJd2hwaqVJfyx7o9XXwjg6TGTwGT/zHczvYLrkQaDKJ9xhjLEZt5M47G/DU/0J6q3B0AQynxYW7Ep59MnVXoec9ssh+KlPzO538DRKDtVDAgMBAAE='),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);
+ if(!await crypto.subtle.verify('RSASSA-PKCS1-v1_5',key,bytes(envelope.signature),bytes(envelope.payload)))return;
+ const release=JSON.parse(new TextDecoder().decode(bytes(envelope.payload)));if(release.schema!==1)return;
+ for(const platform of ['windows','android']){const e=release[platform],url=new URL(e.url);if(url.protocol!=='https:'||url.hostname!=='folioerp.in')continue;
+ document.querySelectorAll('[data-download="'+platform+'"]').forEach(a=>{a.href=e.url;a.removeAttribute('target');a.setAttribute('download','');});
+ const a=document.querySelector('#download [data-download="'+platform+'"]');if(a){const note=a.closest('article').querySelector('.file-note');if(note)note.textContent='Version '+e.version+' · '+(platform==='windows'?'EXE':'APK')+' · '+(e.size/1048576).toFixed(1)+' MB · Direct download';}
+ }
+ document.querySelector('.hero .eyebrow').textContent='FOLIO '+release.windows.version+' · WINDOWS + ANDROID';
+}catch(e){/* Keep usable fallback links when offline. */}})();
