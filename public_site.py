@@ -19,6 +19,13 @@ class PublicSite:
                 data=p.read_bytes()
                 self.files['/'+rel]=(data,mime,'"'+hashlib.sha256(data).hexdigest()+'"')
         if '/index.html' in self.files:self.files['/']=self.files['/index.html']
+        # Stable public download URLs also work when assets are uploaded through GitHub.
+        for url,asset in {
+            '/downloads/Folio_User_Manual.pdf':'/assets/Folio_User_Manual.pdf',
+            '/downloads/Folio_2.7.3_Brochure.pdf':'/assets/Folio_User_Manual.pdf',
+            '/downloads/releases/Folio_Android_2.9.0.apk':'/assets/Folio_Android_2.9.0.apk',
+        }.items():
+            if asset in self.files:self.files[url]=self.files[asset]
 
     def __call__(self,env,start):
         path=env.get('PATH_INFO','');method=env.get('REQUEST_METHOD','GET')
